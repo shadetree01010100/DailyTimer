@@ -8,8 +8,4 @@ timer.run()
 # timer.cancel()
 ``` 
 
-`callback(<True|False>)` will be called at the times scheduled 
-every 24 hours. Rescheduling while running will take effect on the 
-following cycle; to avoid this behavior call `cancel()`.
-
-Schedules are affected by local daylight savings time settings.
+`callback(<True|False>)` will be called at the times scheduled every day (affected by local daylight savings time settings). Rescheduling while running will take effect on the following cycle; to avoid this behavior call `cancel()`.
