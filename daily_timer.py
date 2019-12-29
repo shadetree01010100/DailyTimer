@@ -14,10 +14,10 @@ class DailyTimer:
         next_off = timer.set_off(23, 59)
         timer.run()
         # timer.cancel()
-        ``` 
+        ```
 
-        `callback(<True|False>)` will be called at the times scheduled 
-        every 24 hours. Rescheduling while running will take effect on the 
+        `callback(<True|False>)` will be called at the times scheduled
+        every 24 hours. Rescheduling while running will take effect on the
         following cycle; to avoid this behavior call `cancel()`.
 
         Schedules are affected by local daylight savings time settings.
@@ -25,17 +25,18 @@ class DailyTimer:
 
     def __init__(self, callback):
         """ Pass a method that accepts a single boolean type argument."""
+        self.logger = logging.getLogger('DailyTimer')
         self.callback = callback
         self._setup()
 
     def cancel(self):
-        """ Clear the schedule, no further callbacks will be called until 
+        """ Clear the schedule, no further callbacks will be called until
             `run()` is called again.
         """
         for event in self.schedule.queue:
             self.schedule.cancel(event)
         self._setup()
-        logging.info('cancelled')
+        self.logger.info('cancelled')
 
     def run(self):
         """ Run the schedule in another thread.
@@ -49,11 +50,11 @@ class DailyTimer:
         self._schedule_thread.daemon = True
         self._schedule_thread.start()
         self._running = True
-        logging.info('schedule started')
+        self.logger.info('schedule started')
 
     def set_off(self, hour, minute):
-        """ Set time to run callback with `False` flag. If running, the 
-            next scheduled event will be run at its original time, and then 
+        """ Set time to run callback with `False` flag. If running, the
+            next scheduled event will be run at its original time, and then
             rescheduled at this new time.
 
             Raises (TypeError, ValueError) if hour or minute is not valid.
@@ -63,8 +64,8 @@ class DailyTimer:
         return self._set_time(hour, minute, False)
 
     def set_on(self, hour, minute):
-        """ Set time to run callback with `True` flag. If running, the 
-            next scheduled event will be run at its original time, and then 
+        """ Set time to run callback with `True` flag. If running, the
+            next scheduled event will be run at its original time, and then
             rescheduled at this new time.
 
             Raises (TypeError, ValueError) if hour or minute is not valid.
@@ -88,15 +89,15 @@ class DailyTimer:
         kwargs['event'] = self._tomorrow(hour, minute)
         self.schedule.enterabs(
             kwargs['event'], 1, self._run_callback, kwargs=kwargs)
-        logging.debug('rescheduled to turn {} at {}'.format(
+        self.logger.debug('rescheduled to turn {} at {}'.format(
             flag, time.asctime(time.localtime(kwargs['event']))))
 
     def _run_callback(self, *args, **kwargs):
         self._reschedule(kwargs)
-        logging.debug('running callback with {} flag'.format(
+        self.logger.debug('running callback with {} flag'.format(
             kwargs['flag']))
         result = self.callback(kwargs['flag'])
-        logging.debug('callback returned {}'.format(result))
+        self.logger.debug('callback returned {}'.format(result))
 
     def _schedule(self, hour, minute, flag):
         previous_event = self._find_event(flag)
@@ -107,7 +108,7 @@ class DailyTimer:
             event = self._tomorrow(hour, minute)
         kwargs = {'flag': flag, 'event': event}
         self.schedule.enterabs(event, 1, self._run_callback, kwargs=kwargs)
-        logging.debug('scheduled to turn {} at {}'.format(
+        self.logger.debug('scheduled to turn {} at {}'.format(
             'ON' if flag else 'OFF', time.asctime(time.localtime(event))))
 
     def _set_time(self, hour, minute, flag):
@@ -116,10 +117,10 @@ class DailyTimer:
             self.on_time = (hour, minute)
         else:
             self.off_time = (hour, minute)
-        logging.info('{} set for {:02}:{:02}:00'.format(
+        self.logger.info('{} set for {:02}:{:02}:00'.format(
             'ON' if flag else 'OFF', hour, minute))
         if self._running:
-            logging.warning('new setting will take effect next cycle')
+            self.logger.warning('new setting will take effect next cycle')
             return self._find_event(flag).time
         self._schedule(hour, minute, flag)
         return self._find_event(flag).time
