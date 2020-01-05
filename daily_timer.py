@@ -27,7 +27,11 @@ class DailyTimer:
         """ Pass a method that accepts a single boolean type argument."""
         self.logger = logging.getLogger('DailyTimer')
         self.callback = callback
-        self._setup()
+        self.schedule = sched.scheduler(time.time, time.sleep)
+        self.on_time = None
+        self.off_time = None
+        self._running = False
+        self._schedule_thread = None
 
     def cancel(self):
         """ Clear the schedule, no further callbacks will be called until
@@ -41,13 +45,12 @@ class DailyTimer:
     def run(self):
         """ Run the schedule in another thread.
 
-            Raises Exception if ON and OFF are not set.
+            Raises RuntimeError if ON and OFF are not set.
         """
         # todo: handle/reschedule times in the past
         if not (self.on_time and self.off_time):
-            raise Exception('call set_on() and set_off() before run()')
+            raise RuntimeError('call set_on() and set_off() before run()')
         self._schedule_thread = threading.Thread(target=self.schedule.run)
-        self._schedule_thread.daemon = True
         self._schedule_thread.start()
         self._running = True
         self.logger.info('schedule started')
@@ -124,13 +127,6 @@ class DailyTimer:
             return self._find_event(flag).time
         self._schedule(hour, minute, flag)
         return self._find_event(flag).time
-
-    def _setup(self):
-        self.schedule = sched.scheduler(time.time, time.sleep)
-        self.on_time = None
-        self.off_time = None
-        self._running = False
-        self._schedule_thread = None
 
     def _today(self, hour, minute):
         now = time.localtime()
